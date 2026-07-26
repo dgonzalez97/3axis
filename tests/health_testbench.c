@@ -11,7 +11,7 @@ static const hm_aocs_config_t aocs_test_config = {
 };  // Standard AOCS configuration for testing
 
 static const hm_battery_config_t battery_test_config = {
-    24.0F, 22.0F, 34.0F, 1.0F, HM_BATTERY_PERIOD_MS
+    24.0F, 22.0F, 34.0F, 1.0F, 8.0F, HM_BATTERY_PERIOD_MS
 };
 
 static const hm_gnss_config_t gnss_test_config = {
@@ -78,7 +78,7 @@ static void test_controller_faults(void) {
 }
 
 static void test_battery_faults(void) {
-    hm_battery_sample_t sample = {28.0F, 0U};
+    hm_battery_sample_t sample = {28.0F, 2.0F, 0U};
     hm_channel_state_t state;
     hm_result_t result;
 
@@ -116,25 +116,36 @@ static void test_battery_faults(void) {
     check(health_monitor_update_battery(&battery_test_config, &state, &sample, &result) == HM_STATUS_OK &&
               result.faults == HM_FAULT_BATTERY_OVERVOLTAGE,
           "battery overvoltage is detected");
+
+    health_monitor_state_reset(&state);
+    sample.battery_voltage_v = 28.0F;
+    sample.battery_current_a = 8.0F;
+    check(health_monitor_update_battery(&battery_test_config, &state, &sample, &result) == HM_STATUS_OK &&
+              result.faults == HM_FAULT_BATTERY_OVERCURRENT &&
+              result.actions == HM_ACTION_REQUEST_AOCS_OFF,
+          "battery overcurrent requests AOCS off");
 }
 
 static void test_gnss_faults(void) {
     hm_gnss_sample_t sample = {5.0F, 8U, true, 0U};
+    hm_gnss_config_t boundary_config = gnss_test_config;
     hm_channel_state_t state;
     hm_result_t result;
 
+    boundary_config.maximum_voltage_rate_v_s = 0.25F;
     health_monitor_state_reset(&state);
-    check(health_monitor_update_gnss(&gnss_test_config, &state, &sample, &result) == HM_STATUS_OK &&
+    check(health_monitor_update_gnss(&boundary_config, &state, &sample, &result) == HM_STATUS_OK &&
               result.faults == HM_FAULT_NONE,
           "nominal GNSS fix is healthy");
 
-    /* Voltage remains valid, but changes faster than the configured rate. */
+    /* Both the maximum voltage and maximum voltage rate are inclusive limits. */
     sample.supply_voltage_v = 5.25F;
     sample.timestamp_ms = 1000U;
-    check(health_monitor_update_gnss(&gnss_test_config, &state, &sample, &result) == HM_STATUS_OK &&
-              result.faults == HM_FAULT_GNSS_VOLTAGE_RATE &&
-              result.severity == HM_SEVERITY_WARNING,
-          "GNSS voltage rate produces warning");
+    check(health_monitor_update_gnss(&boundary_config, &state, &sample, &result) == HM_STATUS_OK &&
+              result.faults == (HM_FAULT_GNSS_VOLTAGE | HM_FAULT_GNSS_VOLTAGE_RATE) &&
+              result.severity == HM_SEVERITY_ERROR &&
+              result.actions == HM_ACTION_USE_BACKUP_NAVIGATION,
+          "GNSS maximum voltage and rate are inclusive");
 
     health_monitor_state_reset(&state);
     sample.supply_voltage_v = 4.5F;
@@ -178,7 +189,7 @@ static void test_sampling_frequency(void) {
     hm_aocs_sample_t aocs_sample = {
         0.2F, RATE_DAMPING_STATUS_OK, false, 0U
     };
-    hm_battery_sample_t battery_sample = {28.0F, 0U};
+    hm_battery_sample_t battery_sample = {28.0F, 2.0F, 0U};
     hm_gnss_sample_t gnss_sample = {5.0F, 8U, true, 0U};
     hm_channel_state_t aocs_state;
     hm_channel_state_t battery_state;

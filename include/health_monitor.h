@@ -48,6 +48,7 @@ typedef uint32_t hm_fault_flags_t;
 #define HM_FAULT_GNSS_VOLTAGE_RATE 0x00000400U
 #define HM_FAULT_GNSS_SATELLITES 0x00000800U
 #define HM_FAULT_GNSS_FIX 0x00001000U
+#define HM_FAULT_BATTERY_OVERCURRENT 0x00002000U
 
 typedef uint32_t hm_action_flags_t;  //Easy to transmit in telemetry, can be used to trigger actions in the cFE application. The actions are not mutually exclusive, so several bits can be set at once.
 
@@ -96,11 +97,13 @@ typedef struct {
     float critical_voltage_v;
     float maximum_voltage_v;
     float maximum_drop_rate_v_s;
+    float maximum_current_a;
     uint32_t nominal_period_ms;
 } hm_battery_config_t;
 
 typedef struct {
     float battery_voltage_v;
+    float battery_current_a;
     uint64_t timestamp_ms;
 } hm_battery_sample_t;
 
@@ -140,9 +143,9 @@ hm_status_t health_monitor_update_aocs(
     hm_result_t *result);
 
 /*
- * Checks battery voltage and voltage drop rate. Low battery recommends that
- * the mode manager switches AOCS off; the health monitor does not perform the
- * mode change directly.
+ * Checks battery voltage, current and voltage drop rate. Low voltage or
+ * overcurrent recommends that the mode manager switches AOCS off; the health
+ * monitor does not perform the mode change directly.
  */
 hm_status_t health_monitor_update_battery(
     const hm_battery_config_t *config,

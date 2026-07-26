@@ -34,7 +34,7 @@ wheel torque = damping gain * body rate
 | Channel | Frequency | Checks | Recommended action |
 |---|---:|---|---|
 | AOCS body rate | 100 Hz | 1.5 rad/s value limit, 6.7 rad/s2 rate limit, controller status and wheel saturation | Reject an invalid wheel command |
-| Battery voltage | 10 Hz | Below 24 V, critical below 22 V, above 34 V, or a drop faster than 1 V/s | Request AOCS off for low or critical voltage |
+| Battery | 10 Hz | Below 24 V, critical below 22 V, above 34 V, a drop faster than 1 V/s, or current at/above 8 A | Request AOCS off for low voltage or overcurrent |
 | GNSS | 1 Hz | 4.75-5.25 V supply, 0.2 V/s voltage rate, at least four satellites and a valid fix | Request backup navigation for invalid voltage or navigation data |
 
 Rate of change is calculated using the actual difference between timestamps.
@@ -78,8 +78,9 @@ All rate-damping checks passed.
 [PASS] low battery requests AOCS off
 [PASS] critical battery produces critical health
 [PASS] battery overvoltage is detected
+[PASS] battery overcurrent requests AOCS off
 [PASS] nominal GNSS fix is healthy
-[PASS] GNSS voltage rate produces warning
+[PASS] GNSS maximum voltage and rate are inclusive
 [PASS] bad GNSS voltage selects backup navigation
 [PASS] bad GNSS fix and satellite count are detected
 [PASS] null configuration is rejected

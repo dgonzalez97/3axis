@@ -25,10 +25,12 @@ static bool battery_config_is_valid(const hm_battery_config_t *config) {
            isfinite(config->critical_voltage_v) &&
            isfinite(config->maximum_voltage_v) &&
            isfinite(config->maximum_drop_rate_v_s) &&
+           isfinite(config->maximum_current_a) &&
            (config->critical_voltage_v > 0.0F) &&
            (config->critical_voltage_v < config->aocs_off_voltage_v) &&
            (config->aocs_off_voltage_v < config->maximum_voltage_v) &&
            (config->maximum_drop_rate_v_s > 0.0F) &&
+           (config->maximum_current_a > 0.0F) &&
            (config->nominal_period_ms > 0U);
 }
 
@@ -176,7 +178,8 @@ hm_status_t health_monitor_update_battery(const hm_battery_config_t *config, hm_
     if (!battery_config_is_valid(config)) {
         return HM_STATUS_INVALID_CONFIG;
     }
-    if (!isfinite(sample->battery_voltage_v)) {
+    if (!isfinite(sample->battery_voltage_v) ||
+        !isfinite(sample->battery_current_a)) {
         return HM_STATUS_INVALID_INPUT;
     }
 
@@ -196,6 +199,10 @@ hm_status_t health_monitor_update_battery(const hm_battery_config_t *config, hm_
 
     if (result->rate_valid && (result->calculated_rate_per_s < -config->maximum_drop_rate_v_s)) {
         record_fault(result, HM_FAULT_BATTERY_DROP_RATE, HM_SEVERITY_WARNING, HM_ACTION_NONE);
+    }
+
+    if (fabsf(sample->battery_current_a) >= config->maximum_current_a) {
+        record_fault(result, HM_FAULT_BATTERY_OVERCURRENT, HM_SEVERITY_ERROR, HM_ACTION_REQUEST_AOCS_OFF);
     }
 
     state->active_faults = result->faults;
