@@ -16,6 +16,37 @@ static bool aocs_config_is_valid(const hm_aocs_config_t *config) {
            (config->nominal_period_ms > 0U);
 }
 
+static bool battery_config_is_valid(const hm_battery_config_t *config) {
+    if (config == NULL) {
+        return false;
+    }
+
+    return isfinite(config->aocs_off_voltage_v) &&
+           isfinite(config->critical_voltage_v) &&
+           isfinite(config->maximum_voltage_v) &&
+           isfinite(config->maximum_drop_rate_v_s) &&
+           (config->critical_voltage_v > 0.0F) &&
+           (config->critical_voltage_v < config->aocs_off_voltage_v) &&
+           (config->aocs_off_voltage_v < config->maximum_voltage_v) &&
+           (config->maximum_drop_rate_v_s > 0.0F) &&
+           (config->nominal_period_ms > 0U);
+}
+
+static bool gnss_config_is_valid(const hm_gnss_config_t *config) {
+    if (config == NULL) {
+        return false;
+    }
+
+    return isfinite(config->minimum_supply_voltage_v) &&
+           isfinite(config->maximum_supply_voltage_v) &&
+           isfinite(config->maximum_voltage_rate_v_s) &&
+           (config->minimum_supply_voltage_v > 0.0F) &&
+           (config->minimum_supply_voltage_v < config->maximum_supply_voltage_v) &&
+           (config->maximum_voltage_rate_v_s > 0.0F) &&
+           (config->minimum_satellites_in_view > 0U) &&
+           (config->nominal_period_ms > 0U);
+}
+
 static void prepare_result_for_sample(hm_result_t *result, float value) {
     result->monitored_value = value;
     result->calculated_rate_per_s = 0.0F;
@@ -34,7 +65,6 @@ static void record_fault(hm_result_t *result, hm_fault_flags_t fault, hm_severit
     result->faults |= fault;
     result->actions |= action;
 
-    /* The severity enum is ordered from OK to ERROR. */
     if (severity > result->severity) {
         result->severity = severity;
     }
@@ -96,6 +126,8 @@ void health_monitor_state_reset(hm_channel_state_t *state) {
     state->active_faults = HM_FAULT_NONE;
 }
 
+//------------------------AOCS Health -----------------
+
 hm_status_t health_monitor_update_aocs(const hm_aocs_config_t *config, hm_channel_state_t *state, const hm_aocs_sample_t *sample, hm_result_t *result) {
     hm_status_t status;
 
@@ -127,6 +159,84 @@ hm_status_t health_monitor_update_aocs(const hm_aocs_config_t *config, hm_channe
         record_fault(result, HM_FAULT_CONTROLLER_ERROR, HM_SEVERITY_ERROR, HM_ACTION_REJECT_WHEEL_COMMAND);
     } else if (sample->wheel_saturated) {
         record_fault(result, HM_FAULT_WHEEL_SATURATED, HM_SEVERITY_WARNING, HM_ACTION_NONE);
+    }
+
+    state->active_faults = result->faults;
+    return HM_STATUS_OK;
+}
+
+//------------------------Battery Health -----------------
+
+hm_status_t health_monitor_update_battery(const hm_battery_config_t *config, hm_channel_state_t *state, const hm_battery_sample_t *sample, hm_result_t *result) {
+    hm_status_t status;
+
+    if ((config == NULL) || (state == NULL) || (sample == NULL) || (result == NULL)) {
+        return HM_STATUS_NULL_POINTER;
+    }
+    if (!battery_config_is_valid(config)) {
+        return HM_STATUS_INVALID_CONFIG;
+    }
+    if (!isfinite(sample->battery_voltage_v)) {
+        return HM_STATUS_INVALID_INPUT;
+    }
+
+    prepare_result_for_sample(result, sample->battery_voltage_v);
+    status = check_timing_and_calculate_rate(state, sample->battery_voltage_v, sample->timestamp_ms, result);
+    if (status != HM_STATUS_OK) {
+        return status;
+    }
+
+    if (sample->battery_voltage_v <= config->critical_voltage_v) {
+        record_fault(result, HM_FAULT_BATTERY_CRITICAL, HM_SEVERITY_CRITICAL, HM_ACTION_REQUEST_AOCS_OFF);
+    } else if (sample->battery_voltage_v < config->aocs_off_voltage_v) {
+        record_fault(result, HM_FAULT_BATTERY_LOW, HM_SEVERITY_ERROR, HM_ACTION_REQUEST_AOCS_OFF);
+    } else if (sample->battery_voltage_v >= config->maximum_voltage_v) {
+        record_fault(result, HM_FAULT_BATTERY_OVERVOLTAGE, HM_SEVERITY_ERROR, HM_ACTION_NONE);
+    }
+
+    if (result->rate_valid && (result->calculated_rate_per_s < -config->maximum_drop_rate_v_s)) {
+        record_fault(result, HM_FAULT_BATTERY_DROP_RATE, HM_SEVERITY_WARNING, HM_ACTION_NONE);
+    }
+
+    state->active_faults = result->faults;
+    return HM_STATUS_OK;
+}
+
+//------------------------GNSS Health -----------------
+
+hm_status_t health_monitor_update_gnss(const hm_gnss_config_t *config, hm_channel_state_t *state, const hm_gnss_sample_t *sample, hm_result_t *result) {
+    hm_status_t status;
+
+    if ((config == NULL) || (state == NULL) || (sample == NULL) || (result == NULL)) {
+        return HM_STATUS_NULL_POINTER;
+    }
+    if (!gnss_config_is_valid(config)) {
+        return HM_STATUS_INVALID_CONFIG;
+    }
+    if (!isfinite(sample->supply_voltage_v)) {
+        return HM_STATUS_INVALID_INPUT;
+    }
+
+    prepare_result_for_sample(result, sample->supply_voltage_v);
+    status = check_timing_and_calculate_rate(state, sample->supply_voltage_v, sample->timestamp_ms, result);
+    if (status != HM_STATUS_OK) {
+        return status;
+    }
+
+    if ((sample->supply_voltage_v < config->minimum_supply_voltage_v) || (sample->supply_voltage_v >= config->maximum_supply_voltage_v)) {
+        record_fault(result, HM_FAULT_GNSS_VOLTAGE, HM_SEVERITY_ERROR, HM_ACTION_USE_BACKUP_NAVIGATION);
+    }
+
+    if (result->rate_valid && (fabsf(result->calculated_rate_per_s) >= config->maximum_voltage_rate_v_s)) {
+        record_fault(result, HM_FAULT_GNSS_VOLTAGE_RATE, HM_SEVERITY_WARNING, HM_ACTION_NONE);
+    }
+
+    if (sample->satellites_in_view < config->minimum_satellites_in_view) {
+        record_fault(result, HM_FAULT_GNSS_SATELLITES, HM_SEVERITY_ERROR, HM_ACTION_USE_BACKUP_NAVIGATION);
+    }
+
+    if (!sample->fix_valid) {
+        record_fault(result, HM_FAULT_GNSS_FIX, HM_SEVERITY_ERROR, HM_ACTION_USE_BACKUP_NAVIGATION);
     }
 
     state->active_faults = result->faults;

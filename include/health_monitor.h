@@ -7,6 +7,8 @@
 #include <stdint.h>
 
 #define HM_AOCS_PERIOD_MS 10U
+#define HM_BATTERY_PERIOD_MS 100U
+#define HM_GNSS_PERIOD_MS 1000U
 
 typedef enum {
     HM_STATUS_OK = 0,
@@ -21,7 +23,8 @@ typedef enum {
 typedef enum {
     HM_SEVERITY_OK = 0,
     HM_SEVERITY_WARNING,
-    HM_SEVERITY_ERROR
+    HM_SEVERITY_ERROR,
+    HM_SEVERITY_CRITICAL
 } hm_severity_t;
 
 /*
@@ -37,11 +40,21 @@ typedef uint32_t hm_fault_flags_t;
 #define HM_FAULT_CONTROLLER_ERROR 0x00000004U
 #define HM_FAULT_WHEEL_SATURATED 0x00000008U
 #define HM_FAULT_TIMESTAMP 0x00000010U
+#define HM_FAULT_BATTERY_LOW 0x00000020U
+#define HM_FAULT_BATTERY_CRITICAL 0x00000040U
+#define HM_FAULT_BATTERY_OVERVOLTAGE 0x00000080U
+#define HM_FAULT_BATTERY_DROP_RATE 0x00000100U
+#define HM_FAULT_GNSS_VOLTAGE 0x00000200U
+#define HM_FAULT_GNSS_VOLTAGE_RATE 0x00000400U
+#define HM_FAULT_GNSS_SATELLITES 0x00000800U
+#define HM_FAULT_GNSS_FIX 0x00001000U
 
 typedef uint32_t hm_action_flags_t;  //Easy to transmit in telemetry, can be used to trigger actions in the cFE application. The actions are not mutually exclusive, so several bits can be set at once.
 
 #define HM_ACTION_NONE 0x00000000U
 #define HM_ACTION_REJECT_WHEEL_COMMAND 0x00000001U
+#define HM_ACTION_REQUEST_AOCS_OFF 0x00000002U
+#define HM_ACTION_USE_BACKUP_NAVIGATION 0x00000004U
 
 typedef struct {
     bool initialised;
@@ -78,6 +91,34 @@ typedef struct {
     uint64_t timestamp_ms;
 } hm_aocs_sample_t;
 
+typedef struct {
+    float aocs_off_voltage_v;
+    float critical_voltage_v;
+    float maximum_voltage_v;
+    float maximum_drop_rate_v_s;
+    uint32_t nominal_period_ms;
+} hm_battery_config_t;
+
+typedef struct {
+    float battery_voltage_v;
+    uint64_t timestamp_ms;
+} hm_battery_sample_t;
+
+typedef struct {
+    float minimum_supply_voltage_v;
+    float maximum_supply_voltage_v;
+    float maximum_voltage_rate_v_s;
+    uint8_t minimum_satellites_in_view;
+    uint32_t nominal_period_ms;
+} hm_gnss_config_t;
+
+typedef struct {
+    float supply_voltage_v;
+    uint8_t satellites_in_view;
+    bool fix_valid;
+    uint64_t timestamp_ms;
+} hm_gnss_sample_t;
+
 /*
  * Clears the saved sample, timestamp, counter and active faults.
  * Call this once before using a channel state for the first time.
@@ -99,8 +140,30 @@ hm_status_t health_monitor_update_aocs(
     hm_result_t *result);
 
 /*
- * TODO: Add the 10 Hz battery health monitor.
- * TODO: Add the 1 Hz GNSS health monitor.
+ * Checks battery voltage and voltage drop rate. Low battery recommends that
+ * the mode manager switches AOCS off; the health monitor does not perform the
+ * mode change directly.
+ */
+hm_status_t health_monitor_update_battery(
+    const hm_battery_config_t *config,
+    hm_channel_state_t *state,
+    const hm_battery_sample_t *sample,
+    hm_result_t *result);
+
+/*
+ * Checks GNSS supply voltage, voltage rate, fix validity and satellites in
+ * view. Invalid voltage or navigation data recommends using the backup
+ * navigation source; voltage rate alone is reported as a warning.
+ */
+hm_status_t health_monitor_update_gnss(
+    const hm_gnss_config_t *config,
+    hm_channel_state_t *state,
+    const hm_gnss_sample_t *sample,
+    hm_result_t *result);
+
+/*
+ * GNSS provides position and time, not a TLE. A TLE would be monitored
+ * separately as input to an orbit propagator.
  *
  * A future cFE application can call these functions from its scheduled
  * wake-up and publish fault transitions through Event Services. This follows
