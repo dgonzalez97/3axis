@@ -1,0 +1,37 @@
+REAL OBC INTEGRATION SKETCH
+
+Keep rate_damping.c and health_monitor.c as platform-independent flight
+libraries. A cFE AOCS application should load gains, torque limits and health
+thresholds through Table Services, validate them once, and reject an invalid
+table before enabling wheel commands. Sensor and subsystem data should arrive
+in explicitly defined Software Bus messages; do not transmit the native C
+structures directly because padding, byte order and interface versions must be
+controlled.
+
+The current controller is single-axis. For a three-axis spacecraft, keep one
+configuration and result per body axis, verify that gyro measurements use the
+same body frame and sign convention, then run the controller at 100 Hz. Pass
+the three requested body torques to a separate wheel-allocation layer. That
+layer must account for wheel geometry, torque limits, speed or momentum limits
+and failed wheels before producing hardware commands. Send zero torque, or the
+last independently approved safe command, whenever the controller returns a
+non-OK status.
+
+Run AOCS, battery and GNSS health updates from scheduled wakeups at 100 Hz,
+10 Hz and 1 Hz. Give each channel its own persistent hm_channel_state_t and use
+a monotonic OBC timestamp. The scheduler or a separate health task must also
+detect missing or stale Software Bus messages; the current functions only
+validate samples that are actually delivered.
+
+Publish severity, fault word and action word as telemetry. Emit Event Services
+messages only when a fault changes state, so nominal samples do not flood the
+event log. Treat action bits as recommendations to a mode-management or FDIR
+application. That application should apply persistence counters, hysteresis,
+mode checks and command authorization before rejecting a wheel command,
+switching AOCS off or selecting backup navigation.
+
+Before flight, replace demonstration limits with reviewed mission values and
+add three-axis simulation, message-loss, timestamp, boundary, processor-load
+and hardware-in-the-loop tests. Measure worst-case execution time on the target
+OBC and verify floating-point behavior, task deadlines and telemetry layout
+with the flight compiler.
