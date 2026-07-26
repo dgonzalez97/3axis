@@ -36,8 +36,9 @@ The build enables strict compiler warnings:
 [PASS] negative damping gain is rejected
 [PASS] NaN body rate is rejected
 [PASS] numeric overflow is rejected
-Final simulated body rate: 0.00003 rad/s
-[PASS] closed-loop body rate converges toward zero
+Simulated time: 4500 ms
+Final simulated body rate: 0.007703 rad/s
+[PASS] closed-loop body rate settles below 2% of initial rate
 All rate-damping checks passed.
 ```
 

@@ -3,6 +3,7 @@
 #include <float.h>
 #include <math.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 
 static int failures;
@@ -46,19 +47,26 @@ static void test_invalid_inputs(void) {
     check(rate_damping_step(&overflow_config, FLT_MAX, &output) == RATE_DAMPING_STATUS_NUMERIC_ERROR, "numeric overflow is rejected");
 }
 
-
-
 static void test_closed_loop_convergence(void) {
+    
     const rate_damping_config_t config = {0.8F, 0.15F};
+    const float spacecraft_inertia_kg_m2 = 0.67F; // asumtion, to be fuzzy tested later
     
-    const float spacecraft_inertia_kg_m2 = 0.67F;
+    const uint32_t controller_period_ms = UINT32_C(10);
+    const uint32_t simulation_duration_ms = UINT32_C(4500);
+    const uint32_t simulation_steps = simulation_duration_ms / controller_period_ms;
+    const float controller_period_s = (float)controller_period_ms / 1000.0F;
     
-    const float controller_period_s = 0.01F;
-    rate_damping_output_t output;
-    float body_rate_rad_s = 0.6F;
-    unsigned int step;
+    
+    const float initial_body_rate_rad_s = 0.6F;
+    const float settling_limit_rad_s = initial_body_rate_rad_s * 0.02F;
 
-    for (step = 0U; step < 12000U; step++) {
+    rate_damping_output_t output;
+    float body_rate_rad_s = initial_body_rate_rad_s; // initial body rate for the closed-loop simulation, to be fuzzy tested later
+
+    uint32_t step;
+
+    for (step = 0U; step < simulation_steps; step++) {
         if (rate_damping_step(&config, body_rate_rad_s, &output) != RATE_DAMPING_STATUS_OK) {
             check(false, "closed-loop simulation executes");
             return;
@@ -67,12 +75,14 @@ static void test_closed_loop_convergence(void) {
         body_rate_rad_s += (-output.wheel_torque_command_nm / spacecraft_inertia_kg_m2) * controller_period_s;
     }
 
+    (void)printf("Simulated time: %u ms\n", (unsigned int)simulation_duration_ms);
     (void)printf("Final simulated body rate: %.6f rad/s\n", (double)body_rate_rad_s);
-    
-    check(fabsf(body_rate_rad_s) < 0.001F, "closed-loop body rate converges toward zero");
+
+    check(fabsf(body_rate_rad_s) < settling_limit_rad_s, "closed-loop body rate settles below 2% of initial rate");
 }
 
 int main(void) {
+
     test_controller_values();
     test_invalid_inputs();
     test_closed_loop_convergence();

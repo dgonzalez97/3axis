@@ -3,7 +3,9 @@
 
 #include <stdbool.h>
 
-typedef struct {   // This struct contains the configuration parameters for the rate damping algorithm. Should be either in cFE Tables or from AOCS algorithm 
+// This file could use doxygen for ease of documentation
+
+typedef struct { // This struct contains the configuration parameters for the rate damping algorithm. Should be either in cFE Tables or from AOCS algorithm
     float damping_gain_nms;
     float wheel_torque_limit_nm;
 } rate_damping_config_t;
@@ -16,10 +18,10 @@ typedef enum {
     RATE_DAMPING_STATUS_NUMERIC_ERROR
 } rate_damping_status_t; // for the HS app 
 
-typedef struct {  // Struct to hold the output of the rate damping algorithm. Contains the wheel torque command and a flag indicating if the wheel is saturated.
+typedef struct { // Struct to hold the output of the rate damping algorithm. Contains the wheel torque command and a flag indicating if the wheel is saturated.
     float wheel_torque_command_nm;
     bool wheel_saturated;
-} rate_damping_output_t;  // Will be shared with SB from cFE
+} rate_damping_output_t; // Will be shared with SB from cFE, to be implemented in AOCS algorithm or TMO
 
 /*
  * Control law:
@@ -31,9 +33,6 @@ typedef struct {  // Struct to hold the output of the rate damping algorithm. Co
  * RATE_DAMPING_STATUS_OK means output contains a valid command.
  * wheel_saturated reports whether that command was limited.
  */
-rate_damping_status_t rate_damping_step(
-    const rate_damping_config_t *config,
-    float body_rate_rad_s,
-    rate_damping_output_t *output);
+rate_damping_status_t rate_damping_step(const rate_damping_config_t *config, float body_rate_rad_s, rate_damping_output_t *output);
 
 #endif
