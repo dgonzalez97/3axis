@@ -120,21 +120,24 @@ static void test_battery_faults(void) {
 
 static void test_gnss_faults(void) {
     hm_gnss_sample_t sample = {5.0F, 8U, true, 0U};
+    hm_gnss_config_t boundary_config = gnss_test_config;
     hm_channel_state_t state;
     hm_result_t result;
 
+    boundary_config.maximum_voltage_rate_v_s = 0.25F;
     health_monitor_state_reset(&state);
-    check(health_monitor_update_gnss(&gnss_test_config, &state, &sample, &result) == HM_STATUS_OK &&
+    check(health_monitor_update_gnss(&boundary_config, &state, &sample, &result) == HM_STATUS_OK &&
               result.faults == HM_FAULT_NONE,
           "nominal GNSS fix is healthy");
 
-    /* Voltage remains valid, but changes faster than the configured rate. */
+    /* Both the maximum voltage and maximum voltage rate are inclusive limits. */
     sample.supply_voltage_v = 5.25F;
     sample.timestamp_ms = 1000U;
-    check(health_monitor_update_gnss(&gnss_test_config, &state, &sample, &result) == HM_STATUS_OK &&
-              result.faults == HM_FAULT_GNSS_VOLTAGE_RATE &&
-              result.severity == HM_SEVERITY_WARNING,
-          "GNSS voltage rate produces warning");
+    check(health_monitor_update_gnss(&boundary_config, &state, &sample, &result) == HM_STATUS_OK &&
+              result.faults == (HM_FAULT_GNSS_VOLTAGE | HM_FAULT_GNSS_VOLTAGE_RATE) &&
+              result.severity == HM_SEVERITY_ERROR &&
+              result.actions == HM_ACTION_USE_BACKUP_NAVIGATION,
+          "GNSS maximum voltage and rate are inclusive");
 
     health_monitor_state_reset(&state);
     sample.supply_voltage_v = 4.5F;
