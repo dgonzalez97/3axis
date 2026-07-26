@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Single-axis C demo</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Single-axis rate damping</h1>
+    <p>This page calls the C controller through WebAssembly.</p>
+    <p id="wasm-status">Loading WebAssembly...</p>
+
+    <fieldset>
+        <legend>Inputs</legend>
+
+        <label>
+            Initial body rate
+            <input id="initial-rate" type="range" min="-2" max="2" step="0.05" value="0.6">
+            <output id="initial-rate-value">0.60 rad/s</output>
+        </label>
+
+        <label>
+            Damping gain
+            <input id="damping-gain" type="range" min="0" max="2" step="0.1" value="0.8">
+            <output id="damping-gain-value">0.80 Nms</output>
+        </label>
+
+        <label>
+            Wheel torque limit
+            <input id="torque-limit" type="range" min="0.01" max="0.5" step="0.01" value="0.15">
+            <output id="torque-limit-value">0.15 Nm</output>
+        </label>
+    </fieldset>
+
+    <p>
+        <button id="reset" disabled>Reset</button>
+        <button id="step" disabled>One step</button>
+        <button id="start" disabled>Start</button>
+        <button id="stop" disabled>Stop</button>
+    </p>
+
+    <p id="values">Body rate: 0 rad/s | Wheel torque: 0 Nm</p>
+
+    <canvas id="graph" width="800" height="260"></canvas>
+    <p>Body rate in rad/s. One controller step is 10 ms.</p>
+
+    <script src="app.js"></script>
+    <script src="controller.js"></script>
+</body>
+</html>

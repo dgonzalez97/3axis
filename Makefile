@@ -10,7 +10,7 @@ HEALTH_TARGET := build/health_monitor_testbench
 RATE_SOURCES := src/rate_damping.c tests/testbench.c
 HEALTH_SOURCES := src/health_monitor.c tests/health_testbench.c
 
-.PHONY: all test clean
+.PHONY: all test web clean
 
 all: $(RATE_TARGET) $(HEALTH_TARGET)
 
@@ -28,6 +28,9 @@ $(HEALTH_TARGET): $(HEALTH_SOURCES) include/rate_damping.h \
 test: all
 	./$(RATE_TARGET)
 	./$(HEALTH_TARGET)
+
+web:
+	sh scripts/build_web.sh
 
 clean:
 	rm -rf build
