@@ -48,8 +48,7 @@
     <section>
         <h2>Health messages</h2>
         <p>
-            AOCS, battery and GNSS publish one time-tagged health message
-            every five seconds. AOCS uses the live controller above.
+            AOCS, battery and GNSS report every five seconds.
         </p>
 
         <fieldset>
@@ -84,20 +83,16 @@
             </p>
         </fieldset>
 
-        <p id="health-status">Waiting for WebAssembly...</p>
-
         <div class="table-scroll">
             <table>
                 <thead>
                     <tr>
                         <th>Time</th>
                         <th>Channel</th>
-                        <th>Message</th>
+                        <th>Values</th>
                         <th>Health</th>
                         <th>Errors</th>
                         <th>Actions</th>
-                        <th>Error word</th>
-                        <th>Action word</th>
                     </tr>
                 </thead>
                 <tbody id="health-messages"></tbody>

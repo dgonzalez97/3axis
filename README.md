@@ -95,17 +95,17 @@ but it should remain close to zero and all checks should pass.
 
 ## Browser demo
 
-Run `make web`, serve `build/web`, and open it in a browser. The page publishes
-time-tagged AOCS, battery and GNSS health messages every five seconds. Battery
-and GNSS values are editable; AOCS reads the live controller and reaction-wheel
-state. Each row shows decoded faults and actions alongside their 32-bit words.
+The browser demo is live at
+[dgonzalez97.github.io/3axis](https://dgonzalez97.github.io/3axis/).
+It is built and deployed from the `github-pages` branch. Run `make web` and
+serve `build/web` to use it locally.
 
 ## Real-time and cFE use
 
-There is currently no cFE or FreeRTOS dependency in the algorithm. 
+There is currently no cFE or FreeRTOS dependency in the algorithm.
 
 A future cFE wrapper can receive samples through Software Bus, load limits through Table
-Services and report fault transitions through Event Services. 
+Services and report fault transitions through Event Services.
 
 Action flags are recommendations for a future mode-management application; the health monitor
 does not switch off AOCS hardware itself.
@@ -120,5 +120,3 @@ threshold checks are similar to
 - Add native timing measurements and the results report.
 - Add a deterministic combined command-line simulation.
 - Add a cFE adapter around the independent C algorithms.
-- Add continuous-integration checks.
-- Add the WebAssembly and GitHub Pages demonstration.

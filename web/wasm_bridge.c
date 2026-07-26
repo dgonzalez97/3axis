@@ -151,7 +151,8 @@ int web_health_update_gnss(
     health_result = (hm_result_t){0};
     if (!isfinite(satellites_in_view) ||
         (satellites_in_view < 0.0F) ||
-        (satellites_in_view > 255.0F)) {
+        (satellites_in_view > 255.0F) ||
+        (floorf(satellites_in_view) != satellites_in_view)) {
         return (int)HM_STATUS_INVALID_INPUT;
     }
 

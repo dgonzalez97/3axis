@@ -1,6 +1,6 @@
 body {
     font-family: sans-serif;
-    max-width: 850px;
+    max-width: 1150px;
     margin: 20px auto;
     padding: 0 10px;
     color: #202124;
@@ -81,9 +81,10 @@ canvas {
 
 table {
     width: 100%;
-    min-width: 1080px;
+    min-width: 760px;
+    table-layout: fixed;
     border-collapse: collapse;
-    font-size: 14px;
+    font-size: 15px;
 }
 
 th,
@@ -96,6 +97,33 @@ td {
 
 th {
     background: #eceff1;
+}
+
+th:nth-child(1) {
+    width: 90px;
+}
+
+th:nth-child(2) {
+    width: 70px;
+}
+
+th:nth-child(4) {
+    width: 90px;
+}
+
+th:nth-child(5),
+th:nth-child(6) {
+    width: 190px;
+}
+
+td {
+    overflow-wrap: anywhere;
+}
+
+td code {
+    display: inline-block;
+    margin-top: 4px;
+    white-space: nowrap;
 }
 
 .health-ok {
@@ -112,9 +140,4 @@ th {
 .health-input-error {
     border-left: 4px solid #b42318;
     background: #fff0ee;
-}
-
-.word {
-    font-family: monospace;
-    white-space: nowrap;
 }

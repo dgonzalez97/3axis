@@ -1,9 +1,9 @@
 "use strict";
 
 let timer = null;
-let healthTimer = null;
 let samples = [];
 
+const CONTROLLER_INTERVAL_MS = 10;
 const HEALTH_INTERVAL_MS = 5000;
 const initialRate = document.getElementById("initial-rate");
 const dampingGain = document.getElementById("damping-gain");
@@ -19,7 +19,6 @@ const batteryCurrent = document.getElementById("battery-current");
 const gnssVoltage = document.getElementById("gnss-voltage");
 const gnssSatellites = document.getElementById("gnss-satellites");
 const gnssFix = document.getElementById("gnss-fix");
-const healthStatus = document.getElementById("health-status");
 const healthMessages = document.getElementById("health-messages");
 
 const monitorStatusNames = [
@@ -129,6 +128,7 @@ function resetSimulation() {
     samples = [];
     Module._web_reset(Number(initialRate.value));
     Module._web_health_reset();
+    healthMessages.replaceChildren();
     showValues();
 }
 
@@ -150,7 +150,7 @@ function runOneStep() {
 
 function startSimulation() {
     if (timer === null) {
-        timer = setInterval(runOneStep, 20);
+        timer = setInterval(runOneStep, CONTROLLER_INTERVAL_MS);
     }
 }
 
@@ -202,22 +202,30 @@ function makeHealthRow(result) {
         result.timeTag,
         result.channel,
         result.message,
-        result.severity,
-        result.errors,
-        result.actions,
-        result.faultWord,
-        result.actionWord
+        result.severity
     ];
 
     row.className = `health-${result.severity.toLowerCase().replace(" ", "-")}`;
-    cells.forEach((text, index) => {
+    cells.forEach((text) => {
         const cell = document.createElement("td");
         cell.textContent = text;
-        if (index >= 6) {
-            cell.className = "word";
-        }
         row.appendChild(cell);
     });
+
+    [
+        [result.errors, result.faultWord],
+        [result.actions, result.actionWord]
+    ].forEach(([text, word]) => {
+        const cell = document.createElement("td");
+        const code = document.createElement("code");
+
+        cell.textContent = text;
+        code.textContent = word;
+        cell.appendChild(document.createElement("br"));
+        cell.appendChild(code);
+        row.appendChild(cell);
+    });
+
     return row;
 }
 
@@ -276,17 +284,14 @@ function publishHealthMessages() {
     results.forEach((result) => fragment.appendChild(makeHealthRow(result)));
     healthMessages.prepend(fragment);
 
-    while (healthMessages.children.length > 30) {
+    while (healthMessages.children.length > 15) {
         healthMessages.removeChild(healthMessages.lastElementChild);
     }
-
-    healthStatus.textContent =
-        `Last messages: ${timeTag}. Next update in five seconds.`;
 }
 
 function startHealthMessages() {
     publishHealthMessages();
-    healthTimer = setInterval(publishHealthMessages, HEALTH_INTERVAL_MS);
+    setInterval(publishHealthMessages, HEALTH_INTERVAL_MS);
 }
 
 function enableButtons() {
