@@ -93,6 +93,13 @@ All health-monitor checks passed.
 The exact final printed rate can vary slightly with the compiler and platform,
 but it should remain close to zero and all checks should pass.
 
+## Browser demo
+
+Run `make web`, serve `build/web`, and open it in a browser. The page publishes
+time-tagged AOCS, battery and GNSS health messages every five seconds. Battery
+and GNSS values are editable; AOCS reads the live controller and reaction-wheel
+state. Each row shows decoded faults and actions alongside their 32-bit words.
+
 ## Real-time and cFE use
 
 There is currently no cFE or FreeRTOS dependency in the algorithm. 

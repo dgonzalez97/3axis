@@ -20,6 +20,7 @@ emcc \
     -Wconversion \
     -Wshadow \
     src/rate_damping.c \
+    src/health_monitor.c \
     web/wasm_bridge.c \
     --no-entry \
     -s EXPORTED_FUNCTIONS='[
@@ -27,7 +28,14 @@ emcc \
         "_web_step",
         "_web_get_body_rate",
         "_web_get_wheel_torque",
-        "_web_get_wheel_saturated"
+        "_web_get_wheel_saturated",
+        "_web_health_reset",
+        "_web_health_update_aocs",
+        "_web_health_update_battery",
+        "_web_health_update_gnss",
+        "_web_health_get_severity",
+        "_web_health_get_faults",
+        "_web_health_get_actions"
     ]' \
     -o build/web/controller.js
 

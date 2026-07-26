@@ -3,6 +3,8 @@ body {
     max-width: 850px;
     margin: 20px auto;
     padding: 0 10px;
+    color: #202124;
+    background: #f6f7f8;
 }
 
 label {
@@ -10,8 +12,27 @@ label {
     margin: 10px 0;
 }
 
+fieldset,
+section {
+    margin: 20px 0;
+}
+
+fieldset {
+    padding: 12px 16px;
+    border: 1px solid #c8ccd0;
+    border-radius: 6px;
+    background: #fff;
+}
+
 input[type="range"] {
     width: 280px;
+}
+
+input[type="text"] {
+    box-sizing: border-box;
+    width: 100%;
+    margin-top: 4px;
+    padding: 6px;
 }
 
 output {
@@ -26,4 +47,74 @@ button {
 canvas {
     width: 100%;
     border: 1px solid #000;
+    background: #fff;
+}
+
+.bad-value {
+    color: #a51d1d;
+    font-weight: bold;
+}
+
+.sensor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0 14px;
+}
+
+.checkbox-label {
+    align-self: end;
+    padding-bottom: 6px;
+}
+
+.hint {
+    margin-bottom: 4px;
+    color: #555;
+    font-size: 14px;
+}
+
+.table-scroll {
+    overflow-x: auto;
+    border: 1px solid #c8ccd0;
+    border-radius: 6px;
+    background: #fff;
+}
+
+table {
+    width: 100%;
+    min-width: 1080px;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+th,
+td {
+    padding: 9px;
+    border-bottom: 1px solid #e1e3e5;
+    text-align: left;
+    vertical-align: top;
+}
+
+th {
+    background: #eceff1;
+}
+
+.health-ok {
+    border-left: 4px solid #318044;
+}
+
+.health-warning {
+    border-left: 4px solid #d28b00;
+    background: #fff9e8;
+}
+
+.health-error,
+.health-critical,
+.health-input-error {
+    border-left: 4px solid #b42318;
+    background: #fff0ee;
+}
+
+.word {
+    font-family: monospace;
+    white-space: nowrap;
 }

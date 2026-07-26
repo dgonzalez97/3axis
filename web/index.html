@@ -45,6 +45,66 @@
     <canvas id="graph" width="800" height="260"></canvas>
     <p>Body rate in rad/s. One controller step is 10 ms.</p>
 
+    <section>
+        <h2>Health messages</h2>
+        <p>
+            AOCS, battery and GNSS publish one time-tagged health message
+            every five seconds. AOCS uses the live controller above.
+        </p>
+
+        <fieldset>
+            <legend>Sensor values</legend>
+            <div class="sensor-grid">
+                <label>
+                    Battery voltage (V)
+                    <input id="battery-voltage" type="text" value="28.0">
+                </label>
+                <label>
+                    Battery current (A)
+                    <input id="battery-current" type="text" value="2.0">
+                </label>
+                <label>
+                    GNSS voltage (V)
+                    <input id="gnss-voltage" type="text" value="5.0">
+                </label>
+                <label>
+                    GNSS satellites
+                    <input id="gnss-satellites" type="text" value="8">
+                </label>
+                <label class="checkbox-label">
+                    <input id="gnss-fix" type="checkbox" checked>
+                    GNSS fix valid
+                </label>
+            </div>
+            <p class="hint">
+                Limits: battery low &lt; 24 V, critical &le; 22 V,
+                overvoltage &ge; 34 V, overcurrent &ge; 8 A.
+                GNSS supply must stay from 4.75 V up to, but not including,
+                5.25 V.
+            </p>
+        </fieldset>
+
+        <p id="health-status">Waiting for WebAssembly...</p>
+
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Channel</th>
+                        <th>Message</th>
+                        <th>Health</th>
+                        <th>Errors</th>
+                        <th>Actions</th>
+                        <th>Error word</th>
+                        <th>Action word</th>
+                    </tr>
+                </thead>
+                <tbody id="health-messages"></tbody>
+            </table>
+        </div>
+    </section>
+
     <script src="app.js"></script>
     <script src="controller.js"></script>
 </body>
